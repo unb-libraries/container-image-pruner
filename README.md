@@ -67,7 +67,7 @@ Dry-run first to review the plan (nothing is deleted):
 | `summary-json` | Path to the JSON run summary (the plan/results). |
 | `audit-log` | Path to the JSONL audit log (present only when executing). |
 
-The Action also writes a compact table to the **job summary**, emits `::warning`/`::error` **annotations** for degraded/errored packages, and (when `upload-audit-log` is true) uploads the plan `cip-summary.json` plus, in execute mode, `cip-audit.jsonl`: even if the run failed, so the diagnostic is always available.
+The Action also writes a compact table to the **job summary**, emits `::warning`/`::error` **annotations** for degraded/errored packages, and (when `upload-audit-log` is true) uploads the plan `cip-summary.json` plus, in execute mode, `cip-audit.jsonl`: even if the run failed, so the diagnostic is always available. If you invoke the action more than once in a single workflow run, give each call a distinct `artifact-name` — `actions/upload-artifact` rejects duplicate artifact names within a run.
 
 ### Token & permissions
 

@@ -29,6 +29,7 @@ jobs:
           token: dummy-token
           dry-run: true
           binary-path: ${{ github.workspace }}/tests/fixtures/stub-pruner.sh
+          artifact-name: cip-test-dry
 
       - name: Assert dry-run outputs
         run: |
@@ -45,3 +46,4 @@ jobs:
           package: example
           token: dummy-token
           binary-path: ${{ github.workspace }}/tests/fixtures/stub-pruner-degraded.sh
+          artifact-name: cip-test-degraded
