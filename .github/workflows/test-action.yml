@@ -1,0 +1,47 @@
+name: Test Action
+
+# Exercises the assembled composite action (uses: ./) offline via `binary-path` pointed at a stub
+# that records its argv — so no published release is needed on a PR. Asserts the composite's glue:
+# target selection, dry-run vs execute flag assembly, exit-code mapping, and outputs.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  glue:
+    name: Composite glue (stub engine)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # TODO(security): pin SHA before release
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh tests/fixtures/*.sh
+
+      - name: Dry-run via image-name
+        id: dry
+        uses: ./
+        with:
+          image-name: ghcr.io/unb-libraries/example
+          token: dummy-token
+          dry-run: true
+          binary-path: ${{ github.workspace }}/tests/fixtures/stub-pruner.sh
+
+      - name: Assert dry-run outputs
+        run: |
+          set -euo pipefail
+          [ "${{ steps.dry.outputs.status }}" = "clean" ] || { echo "bad status"; exit 1; }
+          [ "${{ steps.dry.outputs.deleted }}" = "0" ] || { echo "bad deleted"; exit 1; }
+          [ -n "${{ steps.dry.outputs.summary-json }}" ] || { echo "missing summary-json"; exit 1; }
+
+      # A degraded engine run (exit 2) must NOT fail the action step (safe to re-run).
+      - name: Degraded run does not fail the step
+        uses: ./
+        with:
+          owner: unb-libraries
+          package: example
+          token: dummy-token
+          binary-path: ${{ github.workspace }}/tests/fixtures/stub-pruner-degraded.sh

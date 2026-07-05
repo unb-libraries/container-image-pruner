@@ -1,0 +1,41 @@
+[package]
+name = "container-image-pruner"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Safely prune old per-build container images from GitHub Container Registry (GHCR) without breaking multi-arch tagged images."
+license = "MIT"
+repository = "https://github.com/unb-libraries/container-image-pruner"
+
+[[bin]]
+name = "container-image-pruner"
+path = "src/main.rs"
+
+[lib]
+name = "container_image_pruner"
+path = "src/lib.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["rt", "macros", "time"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+regex = "1"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+futures = "0.3"
+
+[dev-dependencies]
+wiremock = "0.6"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time", "test-util", "process"] }
+assert_cmd = "2"
+predicates = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

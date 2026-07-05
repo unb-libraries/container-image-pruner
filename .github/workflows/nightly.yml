@@ -1,0 +1,29 @@
+name: Nightly Live Smoke
+
+# Read-only dry-run against real GHCR to catch GitHub API drift the wiremock fixtures can't.
+# Never deletes. Secret-gated; skipped on forks.
+
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  smoke:
+    name: Live dry-run (read-only)
+    if: ${{ github.repository_owner == 'unb-libraries' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # TODO(security): pin SHA before release
+      - uses: Swatinem/rust-cache@v2
+      - name: Live dry-run
+        env:
+          GHCR_TEST_OWNER: unb-libraries
+          GHCR_TEST_PACKAGE: ${{ vars.GHCR_TEST_PACKAGE }}
+          # A read:packages token; falls back to the workflow token for same-owner packages.
+          GITHUB_TOKEN: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: cargo test --test live_smoke -- --ignored --nocapture

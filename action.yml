@@ -1,0 +1,134 @@
+name: container-image-pruner
+description: >-
+  Safely prune old per-build container images from GHCR (deletes hash-time build tags and their
+  orphaned child manifests; never touches text/branch tags or anything a retained image
+  references).
+author: unb-libraries
+branding:
+  icon: trash-2
+  color: orange
+
+inputs:
+  image-name:
+    description: 'Full image reference ghcr.io/<owner>/<package>. Alternative to owner/package.'
+    required: false
+    default: ''
+  owner:
+    description: 'Repository owner (used when image-name is not given).'
+    required: false
+    default: ''
+  package:
+    description: 'Package name (used with owner). Empty processes every package under the owner.'
+    required: false
+    default: ''
+  token:
+    description: 'GitHub token with read:packages (+ delete:packages unless dry-run).'
+    required: true
+  older-than-days:
+    description: 'Delete build images strictly older than this many days.'
+    required: false
+    default: '60'
+  keep-at-least:
+    description: 'Always keep at least this many of the most-recent build images.'
+    required: false
+    default: '5'
+  dry-run:
+    description: 'When true, only report the plan; delete nothing.'
+    required: false
+    default: 'false'
+  max-delete:
+    description: 'Abort (delete nothing) if the plan exceeds this many deletions.'
+    required: false
+    default: '500'
+  protect-subject-attestations:
+    description: 'Also protect subject-linked attestations of retained images (extra fetches).'
+    required: false
+    default: 'false'
+  read-concurrency:
+    description: 'Concurrency for read/manifest requests.'
+    required: false
+    default: '8'
+  delete-concurrency:
+    description: 'Concurrency for DELETE requests (kept low for secondary rate limits).'
+    required: false
+    default: '3'
+  owner-type:
+    description: 'Force owner kind: user or org (default: auto-detect).'
+    required: false
+    default: ''
+  github-api-url:
+    description: 'Override the GitHub REST API base URL (GitHub Enterprise Server).'
+    required: false
+    default: ''
+  upload-audit-log:
+    description: 'Upload the plan (and audit JSONL, when executing) as a build artifact.'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name of the uploaded artifact.'
+    required: false
+    default: 'container-image-pruner-audit'
+  artifact-retention-days:
+    description: 'Retention for the uploaded artifact.'
+    required: false
+    default: '14'
+  version:
+    description: 'Release tag of the binary to download (default: derived from the crate version).'
+    required: false
+    default: ''
+  binary-path:
+    description: 'Advanced/testing: run this local binary and skip the release download+verify.'
+    required: false
+    default: ''
+
+outputs:
+  deleted:
+    description: 'Number of versions actually deleted.'
+    value: ${{ steps.prune.outputs.deleted }}
+  planned-delete:
+    description: 'Number of versions the plan would delete.'
+    value: ${{ steps.prune.outputs.planned-delete }}
+  status:
+    description: 'Overall run status: clean | degraded | errored | aborted.'
+    value: ${{ steps.prune.outputs.status }}
+  summary-json:
+    description: 'Path to the JSON run summary (the plan/results).'
+    value: ${{ steps.prune.outputs.summary-json }}
+  audit-log:
+    description: 'Path to the JSONL audit log (present only when executing).'
+    value: ${{ steps.prune.outputs.audit-log }}
+
+runs:
+  using: composite
+  steps:
+    - id: prune
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/scripts/prune.sh"
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        CIP_IMAGE: ${{ inputs.image-name }}
+        CIP_OWNER: ${{ inputs.owner }}
+        CIP_PACKAGE: ${{ inputs.package }}
+        CIP_OLDER_THAN_DAYS: ${{ inputs.older-than-days }}
+        CIP_KEEP_AT_LEAST: ${{ inputs.keep-at-least }}
+        CIP_DRY_RUN: ${{ inputs.dry-run }}
+        CIP_MAX_DELETE: ${{ inputs.max-delete }}
+        CIP_PROTECT_ATTEST: ${{ inputs.protect-subject-attestations }}
+        CIP_READ_CONCURRENCY: ${{ inputs.read-concurrency }}
+        CIP_DELETE_CONCURRENCY: ${{ inputs.delete-concurrency }}
+        CIP_OWNER_TYPE: ${{ inputs.owner-type }}
+        CIP_GITHUB_API_URL: ${{ inputs.github-api-url }}
+        CIP_VERSION: ${{ inputs.version }}
+        CIP_BINARY_PATH: ${{ inputs.binary-path }}
+
+    # Always upload (even when the run failed/degraded — that's when the diagnostic matters).
+    # TODO(security): pin to a commit SHA before tagging a release.
+    - if: ${{ always() && inputs.upload-audit-log == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ runner.temp }}/cip-summary.json
+          ${{ runner.temp }}/cip-audit.jsonl
+        retention-days: ${{ inputs.artifact-retention-days }}
+        if-no-files-found: ignore

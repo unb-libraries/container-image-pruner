@@ -1,0 +1,39 @@
+name: Release
+
+# Build the linux/x64 engine binary and attach it (+ its sha256) to the GitHub Release for the
+# pushed tag. The Action resolves its version from Cargo.toml, so: bump Cargo.toml -> push the
+# matching vX.Y.Z tag -> this workflow publishes the assets. Only move a floating major tag (v1)
+# to a commit AFTER its release assets are published and verified (see README runbook).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish binary
+    runs-on: ubuntu-latest
+    env:
+      ASSET: container-image-pruner-x86_64-unknown-linux-gnu
+    steps:
+      # TODO(security): pin third-party actions to commit SHAs before the first release.
+      - uses: actions/checkout@v4
+      - name: Build (rust-toolchain.toml pins the toolchain)
+        run: cargo build --release --locked
+      - name: Package + checksum
+        run: |
+          set -euo pipefail
+          cp "target/release/container-image-pruner" "${ASSET}"
+          sha256sum "${ASSET}" > "${ASSET}.sha256"
+          cat "${ASSET}.sha256"
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET }}
+            ${{ env.ASSET }}.sha256
+          fail_on_unmatched_files: true

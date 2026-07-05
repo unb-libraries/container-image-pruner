@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Build, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      # TODO(security): pin third-party actions to commit SHAs before the first release.
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: rustfmt
+        run: cargo fmt --check
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: test
+        run: cargo test
+      - name: flag contract (action.yml <-> engine CLI)
+        run: |
+          cargo build --release
+          scripts/check-flag-contract.sh target/release/container-image-pruner
+
+  lint:
+    name: Lint workflows & scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck (preinstalled on ubuntu runners)
+        run: shellcheck scripts/*.sh tests/fixtures/*.sh
+      - name: actionlint
+        run: |
+          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+      - name: asset-name consistency (prune.sh <-> release.yml)
+        run: scripts/check-asset-name.sh
