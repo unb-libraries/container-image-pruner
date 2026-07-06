@@ -124,7 +124,7 @@ runs:
     # Always upload (even when the run failed/degraded — that's when the diagnostic matters).
     # TODO(security): pin to a commit SHA before tagging a release.
     - if: ${{ always() && inputs.upload-audit-log == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
         path: |

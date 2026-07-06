@@ -21,7 +21,7 @@ jobs:
       ASSET: container-image-pruner-x86_64-unknown-linux-gnu
     steps:
       # TODO(security): pin third-party actions to commit SHAs before the first release.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build (rust-toolchain.toml pins the toolchain)
         run: cargo build --release --locked
       - name: Package + checksum
@@ -31,7 +31,7 @@ jobs:
           sha256sum "${ASSET}" > "${ASSET}.sha256"
           cat "${ASSET}.sha256"
       - name: Attach to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ env.ASSET }}

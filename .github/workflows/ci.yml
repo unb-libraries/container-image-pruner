@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # TODO(security): pin third-party actions to commit SHAs before the first release.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --check
@@ -31,7 +31,7 @@ jobs:
     name: Lint workflows & scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: shellcheck (preinstalled on ubuntu runners)
         run: shellcheck scripts/*.sh tests/fixtures/*.sh
       - name: actionlint

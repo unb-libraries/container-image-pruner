@@ -18,7 +18,7 @@ jobs:
     if: ${{ github.repository_owner == 'unb-libraries' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # TODO(security): pin SHA before release
+      - uses: actions/checkout@v7  # TODO(security): pin SHA before release
       - uses: Swatinem/rust-cache@v2
       - name: Live dry-run
         env:

@@ -17,7 +17,7 @@ jobs:
     name: Composite glue (stub engine)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # TODO(security): pin SHA before release
+      - uses: actions/checkout@v7  # TODO(security): pin SHA before release
       - name: Make scripts executable
         run: chmod +x scripts/*.sh tests/fixtures/*.sh
 
